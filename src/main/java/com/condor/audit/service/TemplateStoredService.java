@@ -1,0 +1,132 @@
+package com.condor.audit.service;
+
+import com.condor.audit.model.MsgResponse;
+import com.condor.audit.model.Person;
+import com.condor.audit.model.TemplateStored;
+import com.condor.audit.model.utilities.JsonBase;
+import com.condor.audit.model.utilities.json.DSLJsoner;
+import com.google.gson.Gson;
+import freemarker.cache.StringTemplateLoader;
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.io.IOException;
+import java.io.Serializable;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Service
+public class TemplateStoredService implements TemplateStoredI, Serializable {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(TemplateStoredService.class);
+    private final RestTemplate restTemplate;
+    private static final String URL = "http://localhost:8080/validate";
+    private static String USER = "user";
+    private static String PASSWORD = "password";
+
+    private static final DSLJsoner dslJsoner = new DSLJsoner();
+
+    public static Configuration config = new Configuration(Configuration.VERSION_2_3_31);
+    @Autowired
+    public TemplateStoredService(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
+    @Autowired
+    private TemplateStoredRepository templateStoredRepository;
+
+
+    @Autowired
+    private Configuration freemarkerConfiguration;
+
+    @Autowired
+    private TemplateStoredRepository templateRepository;
+
+
+
+
+    @Override
+    public MsgResponse requestPerson(Person person, Integer id) throws IOException, TemplateException, Exception {
+
+        Gson gson = new Gson();
+
+        String json = gson.toJson(person);
+
+        JsonBase jb = dslJsoner.deserializeJsonPayload(json);
+
+        String body = "";
+
+        try {
+
+            String databaseTemplate = obtainTemplateFromDB(id);
+            StringTemplateLoader stringLoader = new StringTemplateLoader();
+            stringLoader.putTemplate("person", databaseTemplate);
+            config.setTemplateLoader(stringLoader);
+            Template freemarkerTemplate = config.getTemplate("person");
+            StringWriter stringWriter = new StringWriter();
+            Map<String, Object> root = new HashMap<>();
+            root.put("jb", jb);
+            freemarkerTemplate.process(root, stringWriter);
+            body = stringWriter.toString();
+        }
+        catch (TemplateException | IOException e) {
+            jb.addError(LOGGER, String.format("Freemarker error" + e));
+        }
+
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Object> requestEntity = new HttpEntity<>(new Object(), headers);
+
+        return restTemplate.exchange(
+                URL + "?user={USER}&password={PASSWORD}",
+                HttpMethod.POST,
+                requestEntity,
+                MsgResponse.class,
+                USER,
+                PASSWORD
+        ).getBody();
+
+    }
+
+    @Override
+    public List<TemplateStored> obtainTemplateStored(){
+        List<TemplateStored> templateStored = templateStoredRepository.findAll();
+        for (TemplateStored t: templateStored) {
+            byte[] decodeTemplate = Base64.getDecoder().decode(t.getTemplate());
+            String decodedString = new String(decodeTemplate);
+            t.setTemplate(decodedString);
+        }
+        return templateStored;
+    }
+    @Override
+    public TemplateStored saveTemplate(TemplateStored templateStored) throws IOException{
+        return templateStoredRepository.save(templateStored);
+    }
+
+
+    public String obtainTemplateFromDB(Integer id) throws IOException, TemplateException {
+        // Recupera la plantilla de la base de datos por su ID (o criterio de búsqueda)
+        TemplateStored templateStored = templateRepository.findByPmid(id).orElse(null);
+        // Decodificar la cadena de base64 a una matriz de bytes
+        byte[] decodedTemplate = Base64.getDecoder().decode(templateStored.getTemplate());
+        // Convertir la matriz de bytes en una cadena
+        return new String(decodedTemplate);
+    }
+
+}
+

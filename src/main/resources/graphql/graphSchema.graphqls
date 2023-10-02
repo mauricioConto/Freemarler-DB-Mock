@@ -1,0 +1,37 @@
+type Mutation{
+    saveTemplateFreemarker(templateStored: TemplateStoredDto!): TemplateStoredOutput
+    requestPersonWithTemplate(id: Int, person: PersonRequest): MsgResponse
+}
+type Query{
+    obtainTemplateStored: [TemplateStoredOutput]
+}
+
+type TemplateStoredOutput {
+   pmid: Int,
+   adc: String,
+   template: String
+  }
+
+input TemplateStoredDto {
+    pmid: Int,
+    adc: String,
+    template: String
+}
+
+type MsgResponse {
+    message: String
+}
+
+input PersonRequest{
+  institutionId: String
+  personNameTokenId: String
+  personAddressTokenId: String
+  ssnTokenId: String
+  programManagerId: String
+  externalPersonId: String
+  active: Boolean
+  createdAt: String
+}
+
+
+
