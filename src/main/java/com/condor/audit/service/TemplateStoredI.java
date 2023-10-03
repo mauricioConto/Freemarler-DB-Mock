@@ -16,4 +16,6 @@ public interface TemplateStoredI {
     MsgResponse requestPerson(Person person, Integer id)  throws IOException, TemplateException, Exception;
 
     TemplateStored saveTemplate(TemplateStored templateStored) throws IOException;
+
+    TemplateStored updateTemplateFreemarker(Integer id, String templateStored) throws  IOException;
 }

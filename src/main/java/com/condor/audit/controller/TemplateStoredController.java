@@ -38,4 +38,9 @@ public class TemplateStoredController {
         return templateStoredService.requestPerson(person, id);
     }
 
+    @MutationMapping()
+    public TemplateStored updateTemplateFreemarker(@Argument Integer id, @Argument String template) throws  IOException{
+        return templateStoredService.updateTemplateFreemarker(id, template);
+    }
+
 }

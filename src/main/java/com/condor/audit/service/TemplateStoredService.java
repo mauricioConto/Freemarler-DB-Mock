@@ -5,6 +5,7 @@ import com.condor.audit.model.Person;
 import com.condor.audit.model.TemplateStored;
 import com.condor.audit.model.utilities.JsonBase;
 import com.condor.audit.model.utilities.json.DSLJsoner;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import freemarker.cache.StringTemplateLoader;
 import freemarker.template.Configuration;
@@ -20,6 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import javax.swing.text.html.Option;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.StringReader;
@@ -28,6 +30,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class TemplateStoredService implements TemplateStoredI, Serializable {
@@ -86,11 +89,14 @@ public class TemplateStoredService implements TemplateStoredI, Serializable {
             jb.addError(LOGGER, String.format("Freemarker error" + e));
         }
 
+        ObjectMapper objectMapper = new ObjectMapper();
+        // Convertir el JSON de la cadena a un objeto Java (Persona en este caso)
+        Person personRequest = objectMapper.readValue(body, Person.class);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        HttpEntity<Object> requestEntity = new HttpEntity<>(new Object(), headers);
+        HttpEntity<Object> requestEntity = new HttpEntity<>(personRequest, headers);
 
         return restTemplate.exchange(
                 URL + "?user={USER}&password={PASSWORD}",
@@ -116,6 +122,13 @@ public class TemplateStoredService implements TemplateStoredI, Serializable {
     @Override
     public TemplateStored saveTemplate(TemplateStored templateStored) throws IOException{
         return templateStoredRepository.save(templateStored);
+    }
+
+    @Override
+    public TemplateStored updateTemplateFreemarker(Integer id, String templateStored) throws IOException{
+        Optional<TemplateStored> templateStoredOptional = templateStoredRepository.findByPmid(id);
+        templateStoredOptional.get().setTemplate(templateStored);
+        return templateStoredRepository.save(templateStoredOptional.get());
     }
 
 

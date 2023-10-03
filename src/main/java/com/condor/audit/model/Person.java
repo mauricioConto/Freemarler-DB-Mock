@@ -9,17 +9,16 @@ import java.time.LocalDateTime;
 
 @Setter
 @Getter
-@AllArgsConstructor
-public class Person implements Serializable {
+public class Person {
 
-        String institutionId;
-        String personNameTokenId;
-        String personAddressTokenId;
-        String ssnTokenId;
-        String programManagerId;
-        String externalPersonId;
-        Boolean active;
-        String createdAt;
+        private String institutionId;
+        private String personNameTokenId;
+        private String personAddressTokenId;
+        private String ssnTokenId;
+        private String programManagerId;
+        private String externalPersonId;
+        private Boolean active;
+        private String createdAt;
 
         public String getInstitutionId() {
                 return institutionId;
@@ -84,5 +83,20 @@ public class Person implements Serializable {
         public void setCreatedAt(String createdAt) {
                 this.createdAt = createdAt;
         }
+
+        public Person() {
+        }
+
+        public Person(String institutionId, String personNameTokenId, String personAddressTokenId, String ssnTokenId, String programManagerId, String externalPersonId, Boolean active, String createdAt) {
+                this.institutionId = institutionId;
+                this.personNameTokenId = personNameTokenId;
+                this.personAddressTokenId = personAddressTokenId;
+                this.ssnTokenId = ssnTokenId;
+                this.programManagerId = programManagerId;
+                this.externalPersonId = externalPersonId;
+                this.active = active;
+                this.createdAt = createdAt;
+        }
+
 }
 
