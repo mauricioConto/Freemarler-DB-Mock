@@ -1,6 +1,6 @@
 type Mutation{
-    saveTemplateFreemarker(templateStored: TemplateStoredDto!): TemplateStoredOutput
-    updateTemplateFreemarker(id: Integer, String template): TemplateStoredOutput
+    saveTemplateFreemarker(templateStored: TemplateStoredDto): TemplateStoredOutput
+    updateTemplateFreemarker(id: Int, template: String): TemplateStoredOutput
     requestPersonWithTemplate(id: Int, person: PersonRequest): MsgResponse
 }
 type Query{
@@ -14,7 +14,6 @@ type TemplateStoredOutput {
   }
 
 input TemplateStoredDto {
-    pmid: Int,
     adc: String,
     template: String
 }

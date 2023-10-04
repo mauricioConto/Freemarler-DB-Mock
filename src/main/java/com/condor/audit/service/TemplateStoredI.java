@@ -13,7 +13,7 @@ public interface TemplateStoredI {
 
     List<TemplateStored> obtainTemplateStored();
 
-    MsgResponse requestPerson(Person person, Integer id)  throws IOException, TemplateException, Exception;
+    MsgResponse requestPerson(Person person, Integer id)  throws Exception;
 
     TemplateStored saveTemplate(TemplateStored templateStored) throws IOException;
 

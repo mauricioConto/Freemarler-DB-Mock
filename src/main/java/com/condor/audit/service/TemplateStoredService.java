@@ -62,7 +62,7 @@ public class TemplateStoredService implements TemplateStoredI, Serializable {
 
 
     @Override
-    public MsgResponse requestPerson(Person person, Integer id) throws IOException, TemplateException, Exception {
+    public MsgResponse requestPerson(Person person, Integer id) throws Exception {
 
         Gson gson = new Gson();
 
@@ -90,7 +90,7 @@ public class TemplateStoredService implements TemplateStoredI, Serializable {
         }
 
         ObjectMapper objectMapper = new ObjectMapper();
-        // Convertir el JSON de la cadena a un objeto Java (Persona en este caso)
+        // Convert Json to Object Person
         Person personRequest = objectMapper.readValue(body, Person.class);
 
         HttpHeaders headers = new HttpHeaders();
@@ -111,14 +111,8 @@ public class TemplateStoredService implements TemplateStoredI, Serializable {
 
     @Override
     public List<TemplateStored> obtainTemplateStored(){
-        List<TemplateStored> templateStored = templateStoredRepository.findAll();
-        for (TemplateStored t: templateStored) {
-            byte[] decodeTemplate = Base64.getDecoder().decode(t.getTemplate());
-            String decodedString = new String(decodeTemplate);
-            t.setTemplate(decodedString);
+        return templateStoredRepository.findAll();
         }
-        return templateStored;
-    }
     @Override
     public TemplateStored saveTemplate(TemplateStored templateStored) throws IOException{
         return templateStoredRepository.save(templateStored);
@@ -133,13 +127,8 @@ public class TemplateStoredService implements TemplateStoredI, Serializable {
 
 
     public String obtainTemplateFromDB(Integer id) throws IOException, TemplateException {
-        // Recupera la plantilla de la base de datos por su ID (o criterio de búsqueda)
+        // Recovery the template of database by ID
         TemplateStored templateStored = templateRepository.findByPmid(id).orElse(null);
-        // Decodificar la cadena de base64 a una matriz de bytes
-        byte[] decodedTemplate = Base64.getDecoder().decode(templateStored.getTemplate());
-        // Convertir la matriz de bytes en una cadena
-        return new String(decodedTemplate);
+        return new String(templateStored.getTemplate());
     }
-
 }
-
