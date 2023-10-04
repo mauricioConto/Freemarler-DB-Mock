@@ -58,18 +58,12 @@ public class TemplateStoredService implements TemplateStoredI, Serializable {
     @Autowired
     private TemplateStoredRepository templateRepository;
 
-
-
-
     @Override
     public MsgResponse requestPerson(Person person, Integer id) throws Exception {
 
         Gson gson = new Gson();
-
         String json = gson.toJson(person);
-
         JsonBase jb = dslJsoner.deserializeJsonPayload(json);
-
         String body = "";
 
         try {
@@ -92,10 +86,8 @@ public class TemplateStoredService implements TemplateStoredI, Serializable {
         ObjectMapper objectMapper = new ObjectMapper();
         // Convert Json to Object Person
         Person personRequest = objectMapper.readValue(body, Person.class);
-
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-
         HttpEntity<Object> requestEntity = new HttpEntity<>(personRequest, headers);
 
         return restTemplate.exchange(
