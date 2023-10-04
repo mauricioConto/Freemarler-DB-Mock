@@ -119,8 +119,6 @@ public class TemplateStoredService implements TemplateStoredI, Serializable {
 
 
     public String obtainTemplateFromDB(Integer id) throws IOException, TemplateException {
-        // Recovery the template of database by ID
-        TemplateStored templateStored = templateRepository.findByPmid(id).orElse(null);
-        return new String(templateStored.getTemplate());
+        return templateRepository.findByPmid(id).orElse(null).getTemplate();
     }
 }
