@@ -1,24 +1,29 @@
 package com.condor.audit.model;
 
 
+import org.hibernate.annotations.NaturalId;
+
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Lob;
 import javax.persistence.Table;
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import java.util.UUID;
+
 @Entity
 @Table(name = "template")
 public class TemplateStored {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
-    private Integer pmid;
-    private String adc;
+    private UUID pmid;
+
+    @NaturalId
+    private UUID adc;
 
     private String template;
 
-    public Integer getPmid() {
+    public UUID getPmid() {
         return pmid;
     }
 
@@ -26,18 +31,18 @@ public class TemplateStored {
         return template;
     }
 
-    public String getAdc() {
+    public UUID getAdc() {
         return adc;
     }
 
     public TemplateStored() {
     }
 
-    public void setPmid(Integer pmid) {
+    public void setPmid(UUID pmid) {
         this.pmid = pmid;
     }
 
-    public void setAdc(String adc) {
+    public void setAdc(UUID adc) {
         this.adc = adc;
     }
 
@@ -45,12 +50,12 @@ public class TemplateStored {
         this.template = template;
     }
 
-    public TemplateStored(Integer pmid, String adc) {
+    public TemplateStored(UUID pmid, UUID adc) {
         this.pmid = pmid;
         this.adc = adc;
     }
 
-    public TemplateStored(Integer pmid, String adc, String template) {
+    public TemplateStored(UUID pmid, UUID adc, String template) {
         this.pmid = pmid;
         this.adc = adc;
         this.template = template;
