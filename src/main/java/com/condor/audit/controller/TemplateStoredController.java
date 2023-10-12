@@ -22,7 +22,7 @@ public class TemplateStoredController {
     TemplateStoredService templateStoredService;
 
     @QueryMapping()
-    public Mono<List<TemplateStored>> obtainTemplateStored(){
+    public List<TemplateStored> obtainTemplateStored(){
         return templateStoredService.obtainTemplateStored();
     }
 
@@ -32,13 +32,13 @@ public class TemplateStoredController {
     }
 
     @MutationMapping()
-    public Mono<MsgResponse> requestPersonWithTemplate(@Argument String pmid, @Argument Person person)  throws IOException, TemplateException, Exception {
+    public MsgResponse requestPersonWithTemplate(@Argument String pmid, @Argument Person person)  throws IOException, TemplateException, Exception {
         return templateStoredService.requestPerson(person, pmid);
     }
 
     @MutationMapping()
-    public TemplateStored updateTemplateFreemarker(@Argument String pmid, @Argument String template) throws  IOException{
-        return templateStoredService.updateTemplateFreemarker(pmid, template);
+    public TemplateStored updateTemplateFreemarker(@Argument TemplateStored templateStored) throws  IOException{
+        return templateStoredService.updateTemplateFreemarker(templateStored);
     }
 
 }

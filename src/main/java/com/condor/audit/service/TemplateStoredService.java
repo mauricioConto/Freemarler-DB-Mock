@@ -6,7 +6,6 @@ import com.condor.audit.model.TemplateStored;
 import com.condor.audit.model.utilities.JsonBase;
 import com.condor.audit.model.utilities.json.DSLJsoner;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
 import freemarker.cache.StringTemplateLoader;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
@@ -15,13 +14,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.StringWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,15 +35,10 @@ import java.util.UUID;
 @Service
 public class TemplateStoredService implements TemplateStoredI, Serializable {
 
-
+    private static final HttpClient HTTP_CLIENT = getHttpClient();
     private static final Logger LOGGER = LoggerFactory.getLogger(TemplateStoredService.class);
-    private static final String URL = "http://localhost:8080/validate";
     private static String USER = "user";
     private static String PASSWORD = "password";
-
-    private static final DSLJsoner dslJsoner = new DSLJsoner();
-
-    public static Configuration config = new Configuration(Configuration.VERSION_2_3_31);
 
     private final WebClient.Builder webClientBuilder;
     @Autowired
@@ -56,50 +54,65 @@ public class TemplateStoredService implements TemplateStoredI, Serializable {
         this.webClientBuilder = webClientBuilder;
     }
 
-    public Mono<MsgResponse> requestPerson(Person person, String id) throws Exception {
-        Gson gson = new Gson();
-        String json = gson.toJson(person);
-        JsonBase jb = dslJsoner.deserializeJsonPayload(json);
+    @Override
+    public MsgResponse requestPerson(Person person, String id) throws Exception {
+        DSLJsoner dslJsoner1 = new DSLJsoner();
+        ObjectMapper objectMapper = new ObjectMapper();
+        String jb1 = objectMapper.writeValueAsString(person);
+        JsonBase jb = dslJsoner1.deserializeJsonPayload(jb1);
+        UUID pmid = UUID.fromString(id);
 
-        return obtainTemplateFromDB(id)
-                .flatMap(databaseTemplate -> {
-                    StringTemplateLoader stringLoader = new StringTemplateLoader();
-                    stringLoader.putTemplate("person", databaseTemplate);
+        TemplateStored templateStored = templateRepository.findByPmid(pmid).orElseThrow();
+        String url = templateStored.getUrl();
+        String headerTemplate = templateStored.getHeaderTemplate();
+        String httpMethod = templateStored.getHttpMethod();
+        String pmidAdc = templateStored.getPmid().toString().concat(templateStored.getAdc().toString());
 
-                    Configuration config = new Configuration(Configuration.VERSION_2_3_31);
-                    config.setTemplateLoader(stringLoader);
+        String templateFromDb = templateRepository.findByPmid(pmid).orElseThrow().getTemplate();
 
-                    try {
-                        Template freemarkerTemplate = config.getTemplate("person");
-                        StringWriter stringWriter = new StringWriter();
-                        Map<String, Object> root = new HashMap<>();
-                        root.put("jb", jb);
-                        freemarkerTemplate.process(root, stringWriter);
-                        String body = stringWriter.toString();
+        StringTemplateLoader stringLoader = new StringTemplateLoader();
+        stringLoader.putTemplate(pmidAdc, templateFromDb);
 
-                        ObjectMapper objectMapper = new ObjectMapper();
-                        Person personRequest = objectMapper.readValue(body, Person.class);
+        Configuration config = new Configuration(Configuration.VERSION_2_3_31);
+        config.setTemplateLoader(stringLoader);
+        HttpResponse<String> response = null;
 
-                        return webClientBuilder.build()
-                                .post()
-                                .uri(URL)
-                                .header("user", USER)
-                                .header("password", PASSWORD)
-                                .body(BodyInserters.fromValue(personRequest))
-                                .retrieve()
-                                .bodyToMono(MsgResponse.class);
-                    } catch (TemplateException | IOException e) {
-                        return Mono.error(e);
-                    }
-                });
+        try {
+            Template freemarkerTemplate = config.getTemplate(pmidAdc);
+            StringWriter stringWriter = new StringWriter();
+            Map<String, Object> root = new HashMap<>();
+            root.put("jb", jb);
+            freemarkerTemplate.process(root, stringWriter);
+            String body = stringWriter.toString();
+
+            Person personRequest = objectMapper.readValue(body, Person.class);
+
+             HttpRequest httpRequest = getRequest(body, new URI(url), httpMethod, headerTemplate);
+
+            response = HTTP_CLIENT.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+
+            LOGGER.info(String.format("Request sent ok %s", body));
+
+
+        } catch (TemplateException | IOException e) {
+            throw new Exception();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        return new MsgResponse(response.body());
+
+
+}
+
+    @Override
+    public List<TemplateStored> obtainTemplateStored() {
+        return templateStoredRepository.findAll();
     }
 
     @Override
-    public Mono<List<TemplateStored>> obtainTemplateStored(){
-        return Mono.just(templateStoredRepository.findAll());
-        }
-    @Override
-    public TemplateStored saveTemplate(TemplateStored templateStored) throws IOException{
+    public TemplateStored saveTemplate(TemplateStored templateStored) throws IOException {
         if (!templateStored.getTemplate().isEmpty() || Objects.nonNull(templateStored.getTemplate())) {
             return templateStoredRepository.save(templateStored);
         } else {
@@ -108,15 +121,42 @@ public class TemplateStoredService implements TemplateStoredI, Serializable {
     }
 
     @Override
-    public TemplateStored updateTemplateFreemarker(String pmid, String templateStored) throws IOException{
-        UUID uuidPmid = UUID.fromString(pmid);
-        Optional<TemplateStored> templateStoredOptional = templateStoredRepository.findByPmid(uuidPmid);
-        templateStoredOptional.get().setTemplate(templateStored);
-        return templateStoredRepository.save(templateStoredOptional.get());
+    public TemplateStored updateTemplateFreemarker(TemplateStored templateStored) throws IOException {
+
+        return templateStoredRepository.findByPmid(templateStored.getPmid()).map(ts -> {
+            ts.setHeaderTemplate(templateStored.getHeaderTemplate());
+            ts.setUrl(templateStored.getUrl());
+            ts.setTemplate(templateStored.getTemplate());
+            ts.setHttpMethod(templateStored.getHttpMethod());
+            return templateStoredRepository.save(ts);
+
+        }).get();
     }
 
+    private HttpRequest getRequest(String body, URI uri, String httpMethod, String headerTemplate) {
 
-    private Mono<String> obtainTemplateFromDB(String pmid) throws IOException, TemplateException {
-        return Mono.just(templateRepository.findByPmid(UUID.fromString(pmid)).orElse(null).getTemplate());
+            ObjectMapper objectMapper = new ObjectMapper();
+            HttpRequest.Builder httpRequestBuilder = HttpRequest
+                    .newBuilder(uri)
+                    .header("Content-Type", "application/json")
+                    .method(httpMethod, HttpRequest.BodyPublishers.ofString(body));
+        try {
+            Map<String, String> headerMap = objectMapper.readValue(headerTemplate, Map.class);
+            for (Map.Entry<String, String> entry : headerMap.entrySet()) {
+                httpRequestBuilder.setHeader(entry.getKey(), entry.getValue());
+            }
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+
+        return httpRequestBuilder.build();
     }
+
+    public static HttpClient getHttpClient() {
+        return HttpClient
+                .newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
+    }
+
 }

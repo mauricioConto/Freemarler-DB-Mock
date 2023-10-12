@@ -10,11 +10,11 @@ import java.util.List;
 
 public interface TemplateStoredI {
 
-    Mono<List<TemplateStored>> obtainTemplateStored();
+    List<TemplateStored> obtainTemplateStored();
 
-    Mono<MsgResponse> requestPerson(Person person, String id) throws Exception;
+    MsgResponse requestPerson(Person person, String id) throws Exception;
 
     TemplateStored saveTemplate(TemplateStored templateStored) throws IOException;
 
-    TemplateStored updateTemplateFreemarker(String pmid, String templateStored) throws  IOException;
+    TemplateStored updateTemplateFreemarker(TemplateStored templateStored) throws IOException;
 }

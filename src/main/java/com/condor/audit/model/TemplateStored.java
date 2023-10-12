@@ -23,6 +23,12 @@ public class TemplateStored {
 
     private String template;
 
+    private String httpMethod;
+
+    private String url;
+
+    private String headerTemplate;
+
     public UUID getPmid() {
         return pmid;
     }
@@ -50,14 +56,41 @@ public class TemplateStored {
         this.template = template;
     }
 
+    public String getHttpMethod() {
+        return httpMethod;
+    }
+
+    public void setHttpMethod(String httpMethod) {
+        this.httpMethod = httpMethod;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    public String getHeaderTemplate() {
+        return headerTemplate;
+    }
+
+    public void setHeaderTemplate(String headerTemplate) {
+        this.headerTemplate = headerTemplate;
+    }
+
     public TemplateStored(UUID pmid, UUID adc) {
         this.pmid = pmid;
         this.adc = adc;
     }
 
-    public TemplateStored(UUID pmid, UUID adc, String template) {
+    public TemplateStored(UUID pmid, UUID adc, String template, String httpMethod, String url, String headerTemplate) {
         this.pmid = pmid;
         this.adc = adc;
         this.template = template;
+        this.httpMethod = httpMethod;
+        this.url = url;
+        this.headerTemplate = headerTemplate;
     }
 }
